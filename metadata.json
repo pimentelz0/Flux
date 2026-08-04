@@ -1,6 +1,6 @@
 {
-  "name": "Flux 2.0",
-  "description": "Planilha interativa de organização de conteúdo em vídeo por mês estilo Flux com autenticação e Supabase",
+  "name": "Agenda",
+  "description": "Organização de conteúdo e checklist em vídeo - Agenda",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

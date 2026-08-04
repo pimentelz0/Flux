@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { MonthOption, TabType } from '../types';
 
 interface MonthSelectorProps {
@@ -56,38 +56,40 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
     }
   };
 
-  const tabTitle = activeTab === 'planilha' ? 'Planilha Vídeo' : 'Ideias Para Chegar';
+  if (activeTab === 'para_chegar') {
+    return (
+      <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-[#E8DDD0] mb-4 flex items-center justify-between">
+        <h2 className="text-lg sm:text-xl font-extrabold text-[#58331C]">
+          Para chegar
+        </h2>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-[#E8DDD0] mb-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Dynamic Title */}
-        <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8C5332] bg-[#FAF6F0] px-2.5 py-1 rounded-md border border-[#E8DDD0] mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-[#8C5332]" />
-            <span>{tabTitle}</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#58331C]">
-            {tabTitle} — {currentMonthObj.label}
-          </h2>
-        </div>
+    <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-[#E8DDD0] mb-4 flex items-center justify-between gap-3">
+      {/* Title + Month Selector side-by-side */}
+      <div className="flex items-center gap-2.5 flex-wrap">
+        <h2 className="text-lg sm:text-xl font-extrabold text-[#58331C]">
+          Planilha
+        </h2>
 
-        {/* Month Selector Controls */}
-        <div className="flex items-center gap-2 bg-[#FAF6F0] p-1.5 rounded-xl border border-[#E8DDD0] shrink-0 self-start sm:self-auto">
+        {/* Small Month Selector Controls */}
+        <div className="flex items-center gap-1 bg-[#FAF6F0] p-1 rounded-xl border border-[#E8DDD0]">
           <button
             onClick={handlePrev}
-            className="p-2 rounded-lg text-[#79482B] hover:bg-white hover:shadow-xs transition-all cursor-pointer"
+            className="p-1 rounded-lg text-[#79482B] hover:bg-white hover:shadow-xs transition-all cursor-pointer"
             title="Mês Anterior"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="relative flex items-center px-2">
-            <Calendar className="w-4 h-4 text-[#8C5332] mr-2 pointer-events-none" />
+          <div className="relative flex items-center px-1">
+            <Calendar className="w-3.5 h-3.5 text-[#8C5332] mr-1.5 pointer-events-none" />
             <select
               value={currentMonthKey}
               onChange={(e) => onSelectMonth(e.target.value)}
-              className="bg-transparent text-xs sm:text-sm font-extrabold text-[#58331C] focus:outline-none cursor-pointer pr-1 py-1"
+              className="bg-transparent text-xs sm:text-sm font-bold text-[#58331C] focus:outline-none cursor-pointer py-0.5"
             >
               {monthsList.map((m) => (
                 <option key={m.key} value={m.key}>
@@ -99,10 +101,10 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
 
           <button
             onClick={handleNext}
-            className="p-2 rounded-lg text-[#79482B] hover:bg-white hover:shadow-xs transition-all cursor-pointer"
+            className="p-1 rounded-lg text-[#79482B] hover:bg-white hover:shadow-xs transition-all cursor-pointer"
             title="Próximo Mês"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>

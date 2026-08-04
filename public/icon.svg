@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8C5332" />
+      <stop offset="100%" stop-color="#58331C" />
+    </linearGradient>
+    <linearGradient id="pageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDF9" />
+      <stop offset="100%" stop-color="#FAF6F0" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background Card -->
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="url(#bgGrad)" />
+
+  <!-- Outer Ring Highlight -->
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="none" stroke="#A86E43" stroke-width="4" opacity="0.5" />
+
+  <!-- Notepad Body -->
+  <g filter="url(#shadow)">
+    <!-- Notepad Backing/Page -->
+    <rect x="128" y="112" width="256" height="304" rx="28" fill="url(#pageGrad)" stroke="#E8DDD0" stroke-width="4" />
+
+    <!-- Top Binder Strap -->
+    <path d="M128 112 C128 92, 384 92, 384 112 L384 152 L128 152 Z" fill="#8C5332" />
+
+    <!-- Spiral Rings -->
+    <circle cx="176" cy="112" r="10" fill="#E8DDD0" stroke="#58331C" stroke-width="4" />
+    <circle cx="224" cy="112" r="10" fill="#E8DDD0" stroke="#58331C" stroke-width="4" />
+    <circle cx="272" cy="112" r="10" fill="#E8DDD0" stroke="#58331C" stroke-width="4" />
+    <circle cx="320" cy="112" r="10" fill="#E8DDD0" stroke="#58331C" stroke-width="4" />
+
+    <!-- Notepad Lines -->
+    <line x1="168" y1="200" x2="344" y2="200" stroke="#D3C2B3" stroke-width="8" stroke-linecap="round" />
+    <line x1="168" y1="248" x2="344" y2="248" stroke="#D3C2B3" stroke-width="8" stroke-linecap="round" />
+    <line x1="168" y1="296" x2="300" y2="296" stroke="#D3C2B3" stroke-width="8" stroke-linecap="round" />
+    <line x1="168" y1="344" x2="260" y2="344" stroke="#D3C2B3" stroke-width="8" stroke-linecap="round" />
+
+    <!-- Pen / Bookmark accent -->
+    <path d="M320 280 L352 248 L368 264 L336 296 Z" fill="#8C5332" />
+    <path d="M352 248 L364 236 C368 232, 374 232, 378 236 L380 238 C384 242, 384 248, 380 252 L368 264 Z" fill="#A86E43" />
+    <path d="M312 304 L320 280 L336 296 Z" fill="#58331C" />
+  </g>
+</svg>

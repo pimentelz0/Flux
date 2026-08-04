@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Video, Calendar, Tag, FileText, Check, Plus } from 'lucide-react';
+import { X, Video, Calendar, Tag, Check, Plus } from 'lucide-react';
 import { VideoItem, VideoType, MonthOption } from '../types';
 
 interface AddVideoModalProps {
@@ -11,19 +11,6 @@ interface AddVideoModalProps {
   defaultMonthKey: string;
   monthsList: MonthOption[];
 }
-
-const NICHOS_SUGERIDOS = [
-  'Tutorial',
-  'Vlog',
-  'Review',
-  'Reels/Shorts',
-  'Educacional',
-  'Dicas Rápidas',
-  'Entretenimento',
-  'Bastidores',
-  'Entrevista',
-  'Tecnologia',
-];
 
 export const AddVideoModal: React.FC<AddVideoModalProps> = ({
   isOpen,
@@ -48,7 +35,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
       setTitulo(initialData.titulo || '');
       setData(initialData.data || '');
       setNincho(initialData.nincho || '');
-      setTipo(initialData.tipo || 'planilha');
+      setTipo(initialData.tipo || defaultTab);
       setMesReferencia(initialData.mes_referencia || defaultMonthKey);
       setObservacoes(initialData.observacoes || '');
     } else {
@@ -69,7 +56,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) {
-      setErrorMsg('Por favor, informe o título do vídeo.');
+      setErrorMsg(tipo === 'para_chegar' ? 'Por favor, informe o nome da marca.' : 'Por favor, informe o título do vídeo.');
       return;
     }
 
@@ -88,8 +75,8 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
       });
       onClose();
     } catch (err: any) {
-      console.error('Erro ao salvar vídeo:', err);
-      setErrorMsg(err.message || 'Ocorreu um erro ao salvar o registro no Supabase.');
+      console.error('Erro ao salvar:', err);
+      setErrorMsg(err.message || 'Ocorreu um erro ao salvar o registro.');
     } finally {
       setLoading(false);
     }
@@ -113,7 +100,9 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
             </div>
             <div>
               <h3 className="font-extrabold text-base sm:text-lg text-[#FFFDF9]">
-                {initialData ? 'Editar Registro de Vídeo' : 'Adicionar Novo Vídeo'}
+                {tipo === 'para_chegar'
+                  ? initialData ? 'Editar Marca' : 'Adicionar Marca'
+                  : initialData ? 'Editar Registro de Vídeo' : 'Adicionar Novo Vídeo'}
               </h3>
               <p className="text-xs text-[#E8DDD0]">
                 {tipo === 'planilha' ? 'Planilha de Produção' : 'Aba Para Chegar'}
@@ -136,138 +125,92 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
             </div>
           )}
 
-          {/* Abas / Tipo Toggle */}
+          {/* Titulo / Nome da Marca */}
           <div>
             <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
-              Aba de Destino
-            </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl">
-              <button
-                type="button"
-                onClick={() => setTipo('planilha')}
-                className={`py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                  tipo === 'planilha'
-                    ? 'bg-[#8C5332] text-white shadow-xs'
-                    : 'text-[#9C8272] hover:text-[#79482B]'
-                }`}
-              >
-                Planilha (Agendado)
-              </button>
-              <button
-                type="button"
-                onClick={() => setTipo('para_chegar')}
-                className={`py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                  tipo === 'para_chegar'
-                    ? 'bg-[#8C5332] text-white shadow-xs'
-                    : 'text-[#9C8272] hover:text-[#79482B]'
-                }`}
-              >
-                Para Chegar (Ideia)
-              </button>
-            </div>
-          </div>
-
-          {/* Titulo do Video */}
-          <div>
-            <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
-              Título do Vídeo *
+              {tipo === 'para_chegar' ? 'Nome da Marca *' : 'Título do Vídeo *'}
             </label>
             <div className="relative">
-              <Video className="w-4 h-4 text-[#A48B7B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Tag className="w-4 h-4 text-[#A48B7B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 required
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
-                placeholder="Ex: Como Organizar seus Vídeos no Supabase"
+                placeholder={tipo === 'para_chegar' ? 'Ex: Nike, Sephora, Zara...' : 'Ex: Como organizar sua rotina'}
                 className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
               />
             </div>
           </div>
 
-          {/* Data & Mes de Referência */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
-                Data do Vídeo
-              </label>
-              <div className="relative">
-                <Calendar className="w-4 h-4 text-[#A48B7B] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="date"
-                  value={data}
-                  onChange={(e) => setData(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
+          {tipo === 'planilha' && (
+            <>
+              {/* Data & Mês de Referência */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
+                    Data do Vídeo
+                  </label>
+                  <div>
+                    <input
+                      type="date"
+                      value={data}
+                      onChange={(e) => setData(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
+                    Mês de Referência
+                  </label>
+                  <select
+                    value={mesReferencia}
+                    onChange={(e) => setMesReferencia(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
+                  >
+                    {monthsList.map((m) => (
+                      <option key={m.key} value={m.key}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Nincho / Nicho */}
+              <div>
+                <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
+                  Nincho (Categoria / Tema)
+                </label>
+                <div className="relative">
+                  <Tag className="w-4 h-4 text-[#A48B7B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={nincho}
+                    onChange={(e) => setNincho(e.target.value)}
+                    placeholder="Ex: Tutorial, Tecnologia, VLOG"
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
+                  />
+                </div>
+              </div>
+
+              {/* Observações */}
+              <div>
+                <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
+                  Observações (Opcional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  placeholder="Anotações adicionais sobre o roteiro, links ou equipamentos..."
+                  className="w-full p-3 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
-                Mês de Referência
-              </label>
-              <select
-                value={mesReferencia}
-                onChange={(e) => setMesReferencia(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
-              >
-                {monthsList.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Nincho / Nicho */}
-          <div>
-            <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
-              Nincho (Categoria / Tema)
-            </label>
-            <div className="relative mb-2">
-              <Tag className="w-4 h-4 text-[#A48B7B] absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={nincho}
-                onChange={(e) => setNincho(e.target.value)}
-                placeholder="Ex: Tutorial, Tecnologia, VLOG"
-                className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
-              />
-            </div>
-
-            {/* Quick Nicho Badges */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {NICHOS_SUGERIDOS.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setNincho(item)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                    nincho === item
-                      ? 'bg-[#8C5332] text-white border-[#8C5332] font-semibold'
-                      : 'bg-[#FAF6F0] text-[#836A5B] border-[#E8DDD0] hover:bg-[#F0E6D8]'
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Observacoes */}
-          <div>
-            <label className="block text-xs font-semibold text-[#79482B] uppercase tracking-wider mb-1.5">
-              Observações (Opcional)
-            </label>
-            <textarea
-              rows={2}
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-              placeholder="Anotações adicionais sobre o roteiro, links ou equipamentos..."
-              className="w-full p-3 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
-            />
-          </div>
+            </>
+          )}
 
           {/* Submit Buttons */}
           <div className="pt-3 border-t border-[#F3ECE0] flex items-center justify-end gap-2">
@@ -289,7 +232,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>{initialData ? 'Atualizar Vídeo' : 'Salvar no Supabase'}</span>
+                  <span>{initialData ? 'Atualizar' : 'Salvar'}</span>
                 </>
               )}
             </button>

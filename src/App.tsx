@@ -3,14 +3,13 @@ import { supabase } from './lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { BottomNav } from './components/BottomNav';
 import { MonthSelector } from './components/MonthSelector';
 import { VideoTable } from './components/VideoTable';
 import { AddVideoModal } from './components/AddVideoModal';
 import { LoginScreen } from './components/LoginScreen';
 import { SqlSetupModal } from './components/SqlSetupModal';
 import { VideoItem, TabType, MonthOption } from './types';
-import { Plus, Database, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { Database, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -24,6 +23,7 @@ export default function App() {
   const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<VideoItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Month Selection State (e.g., "2026-08")
   const todayKey = useMemo(() => {
@@ -107,12 +107,16 @@ export default function App() {
 
     // Try Supabase first
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('videos')
         .select('*')
-        .eq('user_id', currentUser.id)
-        .eq('mes_referencia', currentMonthKey)
-        .order('created_at', { ascending: false });
+        .eq('user_id', currentUser.id);
+
+      if (activeTab === 'planilha') {
+        query = query.eq('mes_referencia', currentMonthKey);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (!error && data) {
         setVideos(data as VideoItem[]);
@@ -137,7 +141,9 @@ export default function App() {
         const storedJson = localStorage.getItem(localKey);
         if (storedJson) {
           const allLocal: VideoItem[] = JSON.parse(storedJson);
-          const filtered = allLocal.filter((v) => v.mes_referencia === currentMonthKey);
+          const filtered = activeTab === 'planilha' 
+            ? allLocal.filter((v) => v.mes_referencia === currentMonthKey)
+            : allLocal;
           setVideos(filtered);
         } else {
           setVideos([]);
@@ -148,13 +154,13 @@ export default function App() {
     }
 
     setLoadingData(false);
-  }, [currentUser, currentMonthKey]);
+  }, [currentUser, currentMonthKey, activeTab]);
 
   useEffect(() => {
     if (currentUser) {
       fetchVideos();
     }
-  }, [currentUser, currentMonthKey, fetchVideos]);
+  }, [currentUser, currentMonthKey, activeTab, fetchVideos]);
 
   // Handle Save (Add or Update)
   const handleSaveVideo = async (videoData: Partial<VideoItem>) => {
@@ -236,9 +242,11 @@ export default function App() {
   };
 
   // Handle Delete
-  const handleDeleteVideo = async (id: string) => {
+  const confirmDeleteVideo = async (id: string) => {
     if (!currentUser) return;
-    if (!window.confirm('Tem certeza que deseja excluir este vídeo da planilha?')) return;
+
+    // Immediate UI removal
+    setVideos((prev) => prev.filter((v) => v.id !== id));
 
     try {
       await supabase
@@ -249,8 +257,6 @@ export default function App() {
     } catch (err) {
       console.warn('Aviso de exclusão no Supabase:', err);
     }
-
-    setVideos((prev) => prev.filter((v) => v.id !== id));
 
     const localKey = `videos_store_${currentUser.id}`;
     try {
@@ -263,33 +269,37 @@ export default function App() {
     } catch {}
   };
 
-  // Toggle video between "Planilha" and "Para Chegar"
+  const handleDeleteVideo = (id: string) => {
+    setDeletingId(id);
+  };
+
+  // Duplicate video to the other tab ("Planilha" <-> "Para Chegar")
   const handleToggleTabType = async (video: VideoItem) => {
     if (!currentUser) return;
-    const newTipo: TabType = video.tipo === 'planilha' ? 'para_chegar' : 'planilha';
+    const targetTipo: TabType = video.tipo === 'planilha' ? 'para_chegar' : 'planilha';
+    const duplicatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const duplicatedItem: VideoItem = {
+      ...video,
+      id: duplicatedId,
+      tipo: targetTipo,
+      created_at: new Date().toISOString(),
+    };
 
     try {
-      await supabase
-        .from('videos')
-        .update({ tipo: newTipo })
-        .eq('id', video.id)
-        .eq('user_id', currentUser.id);
+      await supabase.from('videos').insert([duplicatedItem]);
     } catch (err) {
-      console.warn('Aviso ao mover vídeo no Supabase:', err);
+      console.warn('Aviso ao duplicar vídeo no Supabase:', err);
     }
 
-    setVideos((prev) =>
-      prev.map((v) => (v.id === video.id ? { ...v, tipo: newTipo } : v))
-    );
+    setVideos((prev) => [duplicatedItem, ...prev]);
 
     const localKey = `videos_store_${currentUser.id}`;
     try {
       const stored = localStorage.getItem(localKey);
-      if (stored) {
-        const allLocal: VideoItem[] = JSON.parse(stored);
-        const updated = allLocal.map((v) => (v.id === video.id ? { ...v, tipo: newTipo } : v));
-        localStorage.setItem(localKey, JSON.stringify(updated));
-      }
+      const allLocal: VideoItem[] = stored ? JSON.parse(stored) : [];
+      allLocal.unshift(duplicatedItem);
+      localStorage.setItem(localKey, JSON.stringify(allLocal));
     } catch {}
   };
 
@@ -355,7 +365,7 @@ export default function App() {
   const countParaChegar = videos.filter((v) => v.tipo === 'para_chegar').length;
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] text-[#4A301E] pb-24 font-sans selection:bg-[#F0E6D8]">
+    <div className="min-h-screen bg-[#FAF6F0] text-[#4A301E] pb-12 font-sans selection:bg-[#F0E6D8]">
       {/* Top Fixed Header */}
       <Header
         onToggleSidebar={() => setIsSidebarOpen(true)}
@@ -369,9 +379,6 @@ export default function App() {
         onClose={() => setIsSidebarOpen(false)}
         activeTab={activeTab}
         onChangeTab={setActiveTab}
-        currentMonthKey={currentMonthKey}
-        onSelectMonth={setCurrentMonthKey}
-        monthsList={monthsList}
         videos={videos}
         userEmail={currentUser.email}
         onOpenSqlModal={() => setIsSqlModalOpen(true)}
@@ -432,30 +439,22 @@ export default function App() {
           }}
           loading={loadingData}
           onInlineUpdate={handleInlineUpdate}
+          onSaveQuickItem={handleSaveVideo}
         />
       </main>
 
-      {/* Botão Fixo "+ Adicionar vídeo" em cada aba */}
-      <div className="fixed bottom-20 right-4 sm:right-6 z-30">
-        <button
-          onClick={() => {
-            setEditingVideo(null);
-            setIsAddModalOpen(true);
-          }}
-          className="py-3 px-5 rounded-full bg-[#8C5332] hover:bg-[#724125] text-[#FFFDF9] font-bold text-xs sm:text-sm shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center gap-2 border border-[#A86E43] hover:scale-105 active:scale-95 cursor-pointer"
-        >
-          <Plus className="w-5 h-5" />
-          <span>+ Adicionar vídeo</span>
-        </button>
-      </div>
-
-      {/* Fixed Bottom Tab Bar */}
-      <BottomNav
-        activeTab={activeTab}
-        onChangeTab={setActiveTab}
-        countPlanilha={countPlanilha}
-        countParaChegar={countParaChegar}
-      />
+      {/* Floating Fixed Add Button */}
+      <button
+        onClick={() => {
+          setEditingVideo(null);
+          setIsAddModalOpen(true);
+        }}
+        className="fixed bottom-6 right-6 z-40 bg-[#8C5332] hover:bg-[#724125] text-[#FFFDF9] text-xs font-bold py-2.5 px-4 rounded-full shadow-lg border border-[#A86E43] flex items-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        title={activeTab === 'para_chegar' ? 'Adicionar Marca' : 'Adicionar Vídeo'}
+      >
+        <Plus className="w-4 h-4" />
+        <span>Adicionar</span>
+      </button>
 
       {/* Add / Edit Video Modal */}
       <AddVideoModal
@@ -476,6 +475,40 @@ export default function App() {
         isOpen={isSqlModalOpen}
         onClose={() => setIsSqlModalOpen(false)}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deletingId && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-[#E8DDD0] space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto shrink-0">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-base font-extrabold text-[#58331C]">Confirmar Exclusão</h3>
+              <p className="text-xs text-[#836A5B] mt-1">
+                Tem certeza que deseja excluir este registro? Essa ação não pode ser desfeita.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setDeletingId(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-[#E8DDD0] bg-[#FAF6F0] hover:bg-[#F0E6D8] text-[#79482B] text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  confirmDeleteVideo(deletingId);
+                  setDeletingId(null);
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                Sim, Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

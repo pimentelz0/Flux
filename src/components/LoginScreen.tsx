@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Video, Lock, Mail, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { NotebookPen, Lock, Mail, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface LoginScreenProps {
   onSuccess?: () => void;
@@ -72,10 +72,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
         {/* Logo and Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#79482B] text-[#FFFDF9] shadow-lg mb-4">
-            <Video className="w-8 h-8" />
+            <NotebookPen className="w-8 h-8" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#58331C]">
-            Flux
+            Agenda
           </h1>
           <p className="text-sm text-[#836A5B] mt-2 font-medium">
             Sua planilha inteligente de organização de conteúdo audiovisual por mês
@@ -170,7 +170,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>{isSignUp ? 'Criar minha conta' : 'Acessar o Flux'}</span>
+                  <span>{isSignUp ? 'Criar minha conta' : 'Acessar a Agenda'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -184,7 +184,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
 
         {/* Footer info */}
         <p className="text-center text-xs text-[#9C8272] mt-6">
-          Flux — Organizador de Conteúdo Audiovisual © {new Date().getFullYear()}
+          Agenda — Organizador de Conteúdo Audiovisual © {new Date().getFullYear()}
         </p>
       </div>
     </div>

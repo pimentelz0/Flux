@@ -1,0 +1,22 @@
+{
+  "short_name": "Agenda",
+  "name": "Agenda - Organizador de Conteúdo",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512 192x192 96x96 48x48",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "32x32 16x16"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#79482B",
+  "theme_color": "#79482B",
+  "display": "standalone",
+  "orientation": "portrait"
+}

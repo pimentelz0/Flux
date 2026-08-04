@@ -30,17 +30,31 @@ create table if not exists public.videos (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 3. Criar Índices de Performance para Consultas Rápidas
-create index if not exists idx_videos_user_mes on public.videos (user_id, mes_referencia, tipo);
+-- 3. Criar a tabela 'ideias' (Bloco de Notas / Post-its)
+create table if not exists public.ideias (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null default auth.uid(),
+  titulo text not null,
+  conteudo text,
+  items jsonb default '[]'::jsonb,
+  cor text default 'cream',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
--- 4. Habilitar RLS (Row Level Security)
+-- 4. Habilitar RLS nas tabelas
 alter table public.videos enable row level security;
+alter table public.ideias enable row level security;
 
--- 5. Remover políticas antigas se existirem para evitar conflitos
-drop policy if exists "Usuários podem ver seus próprios vídeos" on public.videos;
-drop policy if exists "Usuários podem inserir seus próprios vídeos" on public.videos;
-drop policy if exists "Usuários podem atualizar seus próprios vídeos" on public.videos;
-drop policy if exists "Usuários podem deletar seus próprios vídeos" on public.videos;
+-- 5. Criar Políticas de RLS para a tabela ideias
+drop policy if exists "Usuários podem ver suas próprias ideias" on public.ideias;
+drop policy if exists "Usuários podem inserir suas próprias ideias" on public.ideias;
+drop policy if exists "Usuários podem atualizar suas próprias ideias" on public.ideias;
+drop policy if exists "Usuários podem deletar suas próprias ideias" on public.ideias;
+
+create policy "Usuários podem ver suas próprias ideias" on public.ideias for select using (auth.uid() = user_id);
+create policy "Usuários podem inserir suas próprias ideias" on public.ideias for insert with check (auth.uid() = user_id);
+create policy "Usuários podem atualizar suas próprias ideias" on public.ideias for update using (auth.uid() = user_id);
+create policy "Usuários podem deletar suas próprias ideias" on public.ideias for delete using (auth.uid() = user_id);
 
 -- 6. Criar Políticas de Segurança (RLS) vinculadas ao Usuário Logado
 create policy "Usuários podem ver seus próprios vídeos"
@@ -84,7 +98,7 @@ create policy "Usuários podem deletar seus próprios vídeos"
             </div>
             <div>
               <h3 className="font-extrabold text-base sm:text-lg text-[#FFFDF9]">Estrutura do Banco Supabase</h3>
-              <p className="text-xs text-[#E8DDD0]">Script SQL para criação da tabela 'videos'</p>
+              <p className="text-xs text-[#E8DDD0]">Script SQL para tabelas 'videos' e 'ideias'</p>
             </div>
           </div>
           <button
@@ -103,7 +117,7 @@ create policy "Usuários podem deletar seus próprios vídeos"
               Instruções de Inicialização do Banco:
             </p>
             <p className="text-xs text-[#836A5B]">
-              Se a tabela <code className="font-mono bg-[#F0E6D8] px-1 rounded">videos</code> ainda não existe no seu projeto do Supabase, copie o código SQL abaixo e cole no <strong>SQL Editor</strong> do painel do Supabase.
+              Se as tabelas <code className="font-mono bg-[#F0E6D8] px-1 rounded">videos</code> ou <code className="font-mono bg-[#F0E6D8] px-1 rounded">ideias</code> ainda não existem no seu projeto do Supabase, copie o código SQL abaixo e cole no <strong>SQL Editor</strong> do painel do Supabase.
             </p>
           </div>
 

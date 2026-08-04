@@ -137,8 +137,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332] focus:border-transparent transition-all"
+                  placeholder=""
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332] focus:border-transparent transition-all"
                 />
               </div>
             </div>
@@ -154,9 +154,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder=""
                   minLength={6}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332] focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332] focus:border-transparent transition-all"
                 />
               </div>
             </div>

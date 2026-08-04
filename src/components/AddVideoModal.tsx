@@ -137,8 +137,8 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
                 required
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
-                placeholder={tipo === 'para_chegar' ? 'Ex: Nike, Sephora, Zara...' : 'Ex: Como organizar sua rotina'}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
+                placeholder=""
+                className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
               />
             </div>
           </div>
@@ -190,8 +190,8 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
                     type="text"
                     value={nincho}
                     onChange={(e) => setNincho(e.target.value)}
-                    placeholder="Ex: Tutorial, Tecnologia, VLOG"
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
+                    placeholder=""
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
                   />
                 </div>
               </div>
@@ -205,8 +205,8 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
                   rows={2}
                   value={observacoes}
                   onChange={(e) => setObservacoes(e.target.value)}
-                  placeholder="Anotações adicionais sobre o roteiro, links ou equipamentos..."
-                  className="w-full p-3 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] placeholder-[#B5A092] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
+                  placeholder=""
+                  className="w-full p-3 bg-[#FAF6F0] border border-[#E8DDD0] rounded-xl text-xs sm:text-sm text-[#4A301E] focus:outline-none focus:ring-2 focus:ring-[#8C5332]"
                 />
               </div>
             </>

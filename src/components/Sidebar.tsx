@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Table, Clock, Download, Database, LogOut, NotebookPen } from 'lucide-react';
+import { X, Table, Clock, Download, Database, LogOut, NotebookPen, StickyNote } from 'lucide-react';
 import { TabType, MonthOption, VideoItem } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -12,9 +12,10 @@ interface SidebarProps {
   onSelectMonth?: (monthKey: string) => void;
   monthsList?: MonthOption[];
   videos: VideoItem[];
+  countIdeias?: number;
   userEmail?: string;
   onOpenSqlModal: () => void;
-  onExportCsv: () => void;
+  onExportPdf: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -23,9 +24,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onChangeTab,
   videos,
+  countIdeias = 0,
   userEmail,
   onOpenSqlModal,
-  onExportCsv,
+  onExportPdf,
 }) => {
   if (!isOpen) return null;
 
@@ -111,6 +113,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {paraChegarVideos.length}
                 </span>
               </button>
+
+              <button
+                onClick={() => { onChangeTab('ideias'); onClose(); }}
+                className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'ideias'
+                    ? 'bg-[#8C5332] text-[#FFFDF9] shadow-xs'
+                    : 'text-[#58331C] hover:bg-[#F0E6D8]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <StickyNote className="w-4 h-4" />
+                  <span>Ideias</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold">
+                  {countIdeias}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -121,11 +140,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </p>
             <div className="space-y-1">
               <button
-                onClick={() => { onExportCsv(); onClose(); }}
+                onClick={() => { onExportPdf(); onClose(); }}
                 className="w-full px-3 py-2.5 rounded-xl text-xs font-medium text-[#58331C] hover:bg-[#F0E6D8] flex items-center gap-2.5 transition-colors cursor-pointer"
               >
                 <Download className="w-4 h-4 text-[#8C5332]" />
-                <span>Baixar Planilha (CSV)</span>
+                <span>Baixar planilha em PDF</span>
               </button>
             </div>
           </div>

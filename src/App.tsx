@@ -8,7 +8,10 @@ import { VideoTable } from './components/VideoTable';
 import { AddVideoModal } from './components/AddVideoModal';
 import { LoginScreen } from './components/LoginScreen';
 import { SqlSetupModal } from './components/SqlSetupModal';
-import { VideoItem, TabType, MonthOption } from './types';
+import { IdeiasView } from './components/IdeiasView';
+import { VideoItem, TabType, MonthOption, IdeaItem } from './types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { Database, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 
 export default function App() {
@@ -24,6 +27,9 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<VideoItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Ideas / Notes State
+  const [ideas, setIdeas] = useState<IdeaItem[]>([]);
 
   // Month Selection State (e.g., "2026-08")
   const todayKey = useMemo(() => {
@@ -161,6 +167,130 @@ export default function App() {
       fetchVideos();
     }
   }, [currentUser, currentMonthKey, activeTab, fetchVideos]);
+
+  // Fetch Ideas
+  const fetchIdeas = useCallback(async () => {
+    if (!currentUser) return;
+    let fetchedFromSupabase = false;
+
+    try {
+      const { data, error } = await supabase
+        .from('ideias')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setIdeas(data as IdeaItem[]);
+        fetchedFromSupabase = true;
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar ideias do Supabase, usando local:', err);
+    }
+
+    if (!fetchedFromSupabase) {
+      try {
+        const localKey = `ideias_store_${currentUser.id}`;
+        const stored = localStorage.getItem(localKey);
+        if (stored) {
+          setIdeas(JSON.parse(stored));
+        } else {
+          setIdeas([]);
+        }
+      } catch (err) {
+        console.error('Erro ao ler ideias do localStorage:', err);
+      }
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchIdeas();
+    }
+  }, [currentUser, fetchIdeas]);
+
+  const handleAddIdea = async (ideaData: Partial<IdeaItem>) => {
+    if (!currentUser) return;
+    const newIdea: IdeaItem = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `idea_${Date.now()}_${Math.random()}`,
+      user_id: currentUser.id,
+      titulo: ideaData.titulo || 'Nova Ideia',
+      conteudo: ideaData.conteudo || '',
+      items: ideaData.items || [],
+      cor: ideaData.cor || 'cream',
+      created_at: new Date().toISOString(),
+    };
+
+    setIdeas((prev) => [newIdea, ...prev]);
+
+    try {
+      await supabase.from('ideias').insert([newIdea]);
+    } catch (err) {
+      console.warn('Erro ao salvar ideia no Supabase:', err);
+    }
+
+    const localKey = `ideias_store_${currentUser.id}`;
+    try {
+      const stored = localStorage.getItem(localKey);
+      const allLocal: IdeaItem[] = stored ? JSON.parse(stored) : [];
+      allLocal.unshift(newIdea);
+      localStorage.setItem(localKey, JSON.stringify(allLocal));
+    } catch {}
+  };
+
+  const handleUpdateIdea = async (updatedIdea: IdeaItem) => {
+    if (!currentUser) return;
+
+    setIdeas((prev) =>
+      prev.map((i) => (i.id === updatedIdea.id ? updatedIdea : i))
+    );
+
+    try {
+      await supabase
+        .from('ideias')
+        .update(updatedIdea)
+        .eq('id', updatedIdea.id)
+        .eq('user_id', currentUser.id);
+    } catch (err) {
+      console.warn('Erro ao atualizar ideia no Supabase:', err);
+    }
+
+    const localKey = `ideias_store_${currentUser.id}`;
+    try {
+      const stored = localStorage.getItem(localKey);
+      if (stored) {
+        const allLocal: IdeaItem[] = JSON.parse(stored);
+        const nextLocal = allLocal.map((i) => (i.id === updatedIdea.id ? updatedIdea : i));
+        localStorage.setItem(localKey, JSON.stringify(nextLocal));
+      }
+    } catch {}
+  };
+
+  const handleDeleteIdea = async (id: string) => {
+    if (!currentUser) return;
+
+    setIdeas((prev) => prev.filter((i) => i.id !== id));
+
+    try {
+      await supabase
+        .from('ideias')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', currentUser.id);
+    } catch (err) {
+      console.warn('Erro ao excluir ideia no Supabase:', err);
+    }
+
+    const localKey = `ideias_store_${currentUser.id}`;
+    try {
+      const stored = localStorage.getItem(localKey);
+      if (stored) {
+        const allLocal: IdeaItem[] = JSON.parse(stored);
+        const nextLocal = allLocal.filter((i) => i.id !== id);
+        localStorage.setItem(localKey, JSON.stringify(nextLocal));
+      }
+    } catch {}
+  };
 
   // Handle Save (Add or Update)
   const handleSaveVideo = async (videoData: Partial<VideoItem>) => {
@@ -303,43 +433,83 @@ export default function App() {
     } catch {}
   };
 
-  // CSV Export
-  const handleExportCsv = () => {
-    const activeVideos = videos.filter((v) => v.tipo === activeTab);
+  // PDF Export (Data, Vídeo, Nicho with app theme styling)
+  const handleExportPdf = () => {
+    const activeVideos = currentTabVideos;
     if (activeVideos.length === 0) {
-      alert('Nenhum vídeo para exportar neste mês.');
+      alert('Nenhum registro para exportar nesta lista.');
       return;
     }
 
     const currentMonthObj = monthsList.find((m) => m.key === currentMonthKey);
     const monthLabel = currentMonthObj ? currentMonthObj.label : currentMonthKey;
+    const tabTitle = activeTab === 'para_chegar' ? 'Marcas Para Chegar' : 'Planilha de Vídeos';
 
-    let csvContent = 'data:text/csv;charset=utf-8,';
-    csvContent += 'ID;Vídeo;Data;Nincho;Aba;Mês de Referência;Observações\n';
-
-    activeVideos.forEach((v) => {
-      const row = [
-        v.id,
-        `"${(v.titulo || '').replace(/"/g, '""')}"`,
-        v.data || '',
-        `"${(v.nincho || '').replace(/"/g, '""')}"`,
-        v.tipo,
-        v.mes_referencia,
-        `"${(v.observacoes || '').replace(/"/g, '""')}"`,
-      ].join(';');
-      csvContent += row + '\n';
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
     });
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute(
-      'download',
-      `Planilha_Videos_${activeTab}_${currentMonthKey}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Header Background (#79482B)
+    doc.setFillColor(121, 72, 43);
+    doc.rect(0, 0, 210, 28, 'F');
+
+    // Title: Agenda
+    doc.setTextColor(255, 253, 249);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Agenda', 14, 18);
+
+    // Subtitle
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(232, 221, 208);
+    doc.text(`${tabTitle} - ${monthLabel}`, 196, 18, { align: 'right' });
+
+    // Table Header Data: Data, Vídeo, Nicho (exactly 3 fields)
+    const tableData = activeVideos.map((v) => {
+      let formattedDate = v.data || '';
+      if (formattedDate.includes('-')) {
+        const parts = formattedDate.split('-');
+        if (parts.length === 3) {
+          formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+      }
+      return [formattedDate, v.titulo || '', v.nincho || '-'];
+    });
+
+    autoTable(doc, {
+      startY: 36,
+      head: [['Data', 'Vídeo', 'Nicho']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [140, 83, 50], // #8C5332
+        textColor: [255, 253, 249], // #FFFDF9
+        fontStyle: 'bold',
+        fontSize: 10,
+        halign: 'left',
+      },
+      bodyStyles: {
+        textColor: [74, 48, 30], // #4A301E
+        fontSize: 9,
+        cellPadding: 4,
+      },
+      alternateRowStyles: {
+        fillColor: [250, 246, 240], // #FAF6F0
+      },
+      tableLineColor: [232, 221, 208], // #E8DDD0
+      tableLineWidth: 0.1,
+      columnStyles: {
+        0: { cellWidth: 32 }, // Data
+        1: { cellWidth: 'auto' }, // Vídeo
+        2: { cellWidth: 45 }, // Nicho
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    doc.save(`Agenda_${activeTab}_${currentMonthKey}.pdf`);
   };
 
   // Screen loading indicator during initial auth check
@@ -380,13 +550,14 @@ export default function App() {
         activeTab={activeTab}
         onChangeTab={setActiveTab}
         videos={videos}
+        countIdeias={ideas.length}
         userEmail={currentUser.email}
         onOpenSqlModal={() => setIsSqlModalOpen(true)}
-        onExportCsv={handleExportCsv}
+        onExportPdf={handleExportPdf}
       />
 
       {/* Main Content Area */}
-      <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+      <main className="pt-20 pb-10 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
         {/* Banner if Supabase table 'videos' is missing */}
         {tableMissingError && (
           <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -415,46 +586,59 @@ export default function App() {
           </div>
         )}
 
-        {/* Month Selector Component */}
-        <MonthSelector
-          currentMonthKey={currentMonthKey}
-          onSelectMonth={setCurrentMonthKey}
-          monthsList={monthsList}
-          activeTab={activeTab}
-        />
+        {activeTab === 'ideias' ? (
+          <IdeiasView
+            ideas={ideas}
+            onAddIdea={handleAddIdea}
+            onUpdateIdea={handleUpdateIdea}
+            onDeleteIdea={handleDeleteIdea}
+          />
+        ) : (
+          <>
+            {/* Month Selector Component */}
+            <MonthSelector
+              currentMonthKey={currentMonthKey}
+              onSelectMonth={setCurrentMonthKey}
+              monthsList={monthsList}
+              activeTab={activeTab}
+            />
 
-        {/* Video Spreadsheet / Table */}
-        <VideoTable
-          videos={currentTabVideos}
-          activeTab={activeTab}
-          onEdit={(v) => {
-            setEditingVideo(v);
-            setIsAddModalOpen(true);
-          }}
-          onDelete={handleDeleteVideo}
-          onToggleTabType={handleToggleTabType}
-          onOpenAddModal={() => {
+            {/* Video Spreadsheet / Table */}
+            <VideoTable
+              videos={currentTabVideos}
+              activeTab={activeTab}
+              onEdit={(v) => {
+                setEditingVideo(v);
+                setIsAddModalOpen(true);
+              }}
+              onDelete={handleDeleteVideo}
+              onToggleTabType={handleToggleTabType}
+              onOpenAddModal={() => {
+                setEditingVideo(null);
+                setIsAddModalOpen(true);
+              }}
+              loading={loadingData}
+              onInlineUpdate={handleInlineUpdate}
+              onSaveQuickItem={handleSaveVideo}
+            />
+          </>
+        )}
+      </main>
+
+      {/* Floating Fixed Add Button for Spreadsheet Tabs */}
+      {activeTab !== 'ideias' && (
+        <button
+          onClick={() => {
             setEditingVideo(null);
             setIsAddModalOpen(true);
           }}
-          loading={loadingData}
-          onInlineUpdate={handleInlineUpdate}
-          onSaveQuickItem={handleSaveVideo}
-        />
-      </main>
-
-      {/* Floating Fixed Add Button */}
-      <button
-        onClick={() => {
-          setEditingVideo(null);
-          setIsAddModalOpen(true);
-        }}
-        className="fixed bottom-6 right-6 z-40 bg-[#8C5332] hover:bg-[#724125] text-[#FFFDF9] text-xs font-bold py-2.5 px-4 rounded-full shadow-lg border border-[#A86E43] flex items-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-        title={activeTab === 'para_chegar' ? 'Adicionar Marca' : 'Adicionar Vídeo'}
-      >
-        <Plus className="w-4 h-4" />
-        <span>Adicionar</span>
-      </button>
+          className="fixed bottom-6 right-6 z-40 bg-[#8C5332] hover:bg-[#724125] text-[#FFFDF9] text-xs font-bold py-2.5 px-4 rounded-full shadow-lg border border-[#A86E43] flex items-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          title={activeTab === 'para_chegar' ? 'Adicionar Marca' : 'Adicionar Vídeo'}
+        >
+          <Plus className="w-4 h-4" />
+          <span>Adicionar</span>
+        </button>
+      )}
 
       {/* Add / Edit Video Modal */}
       <AddVideoModal

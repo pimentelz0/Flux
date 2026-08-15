@@ -82,6 +82,11 @@ create policy "Usuários podem atualizar suas próprias ideias" on public.ideias
 create policy "Usuários podem deletar suas próprias ideias" on public.ideias for delete using (auth.uid() = user_id);
 
 -- 8. Criar Políticas de Segurança (RLS) para videos
+drop policy if exists "Usuários podem ver seus próprios vídeos" on public.videos;
+drop policy if exists "Usuários podem inserir seus próprios vídeos" on public.videos;
+drop policy if exists "Usuários podem atualizar seus próprios vídeos" on public.videos;
+drop policy if exists "Usuários podem deletar seus próprios vídeos" on public.videos;
+
 create policy "Usuários podem ver seus próprios vídeos"
   on public.videos for select
   using (auth.uid() = user_id);

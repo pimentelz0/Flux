@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Table, Clock, Download, Database, LogOut, NotebookPen, StickyNote } from 'lucide-react';
+import { X, Table, Clock, Download, NotebookPen, StickyNote, Columns } from 'lucide-react';
 import { TabType, MonthOption, VideoItem } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -13,6 +13,7 @@ interface SidebarProps {
   monthsList?: MonthOption[];
   videos: VideoItem[];
   countIdeias?: number;
+  countConteudos?: number;
   userEmail?: string;
   onOpenSqlModal: () => void;
   onExportPdf: () => void;
@@ -25,6 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onChangeTab,
   videos,
   countIdeias = 0,
+  countConteudos = 0,
   userEmail,
   onOpenSqlModal,
   onExportPdf,
@@ -73,80 +75,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Scrollable area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Section: Abas Principais */}
-          <div>
-            <p className="text-[11px] font-bold text-[#9C8272] uppercase tracking-wider mb-2 px-2">
-              Navegação
-            </p>
-            <div className="space-y-1">
-              <button
-                onClick={() => { onChangeTab('planilha'); onClose(); }}
-                className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'planilha'
-                    ? 'bg-[#8C5332] text-[#FFFDF9] shadow-xs'
-                    : 'text-[#58331C] hover:bg-[#F0E6D8]'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Table className="w-4 h-4" />
-                  <span>Planilha Principal</span>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold">
-                  {planilhaVideos.length}
-                </span>
-              </button>
+          <div className="space-y-1">
+            <button
+              onClick={() => { onChangeTab('planilha'); onClose(); }}
+              className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'planilha'
+                  ? 'bg-[#8C5332] text-[#FFFDF9] shadow-xs'
+                  : 'text-[#58331C] hover:bg-[#F0E6D8]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Table className="w-4 h-4" />
+                <span>Planilha Principal</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold">
+                {planilhaVideos.length}
+              </span>
+            </button>
 
-              <button
-                onClick={() => { onChangeTab('para_chegar'); onClose(); }}
-                className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'para_chegar'
-                    ? 'bg-[#8C5332] text-[#FFFDF9] shadow-xs'
-                    : 'text-[#58331C] hover:bg-[#F0E6D8]'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4" />
-                  <span>Para Chegar</span>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold">
-                  {paraChegarVideos.length}
-                </span>
-              </button>
+            <button
+              onClick={() => { onChangeTab('para_chegar'); onClose(); }}
+              className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'para_chegar'
+                  ? 'bg-[#8C5332] text-[#FFFDF9] shadow-xs'
+                  : 'text-[#58331C] hover:bg-[#F0E6D8]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Clock className="w-4 h-4" />
+                <span>Para Chegar</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold">
+                {paraChegarVideos.length}
+              </span>
+            </button>
 
-              <button
-                onClick={() => { onChangeTab('ideias'); onClose(); }}
-                className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'ideias'
-                    ? 'bg-[#8C5332] text-[#FFFDF9] shadow-xs'
-                    : 'text-[#58331C] hover:bg-[#F0E6D8]'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <StickyNote className="w-4 h-4" />
-                  <span>Ideias</span>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold">
-                  {countIdeias}
-                </span>
-              </button>
-            </div>
+            <button
+              onClick={() => { onChangeTab('ideias'); onClose(); }}
+              className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'ideias'
+                  ? 'bg-[#8C5332] text-[#FFFDF9] shadow-xs'
+                  : 'text-[#58331C] hover:bg-[#F0E6D8]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <StickyNote className="w-4 h-4" />
+                <span>Ideias</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold">
+                {countIdeias}
+              </span>
+            </button>
+
+            <button
+              onClick={() => { onChangeTab('conteudos'); onClose(); }}
+              className={`w-full px-3 py-2.5 rounded-xl flex items-center text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'conteudos'
+                  ? 'bg-[#8C5332] text-[#FFFDF9] shadow-xs'
+                  : 'text-[#58331C] hover:bg-[#F0E6D8]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Columns className="w-4 h-4" />
+                <span>Conteúdos</span>
+              </div>
+            </button>
           </div>
 
-          {/* Section: Ações & Ferramentas */}
-          <div>
-            <p className="text-[11px] font-bold text-[#9C8272] uppercase tracking-wider mb-2 px-2">
-              Ferramentas
-            </p>
-            <div className="space-y-1">
-              <button
-                onClick={() => { onExportPdf(); onClose(); }}
-                className="w-full px-3 py-2.5 rounded-xl text-xs font-medium text-[#58331C] hover:bg-[#F0E6D8] flex items-center gap-2.5 transition-colors cursor-pointer"
-              >
-                <Download className="w-4 h-4 text-[#8C5332]" />
-                <span>Baixar planilha em PDF</span>
-              </button>
-            </div>
+          <div className="pt-2 border-t border-[#E8DDD0]">
+            <button
+              onClick={() => { onExportPdf(); onClose(); }}
+              className="w-full px-3 py-2.5 rounded-xl text-xs font-medium text-[#58331C] hover:bg-[#F0E6D8] flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-[#8C5332]" />
+              <span>Baixar planilha em PDF</span>
+            </button>
           </div>
         </div>
       </div>

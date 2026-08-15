@@ -9,10 +9,29 @@ import { AddVideoModal } from './components/AddVideoModal';
 import { LoginScreen } from './components/LoginScreen';
 import { SqlSetupModal } from './components/SqlSetupModal';
 import { IdeiasView } from './components/IdeiasView';
-import { VideoItem, TabType, MonthOption, IdeaItem } from './types';
+import { ConteudosView } from './components/ConteudosView';
+import { VideoItem, TabType, MonthOption, IdeaItem, ConteudoPlanilha, ConteudoRow } from './types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Database, AlertTriangle, Plus, Trash2 } from 'lucide-react';
+
+// Helper to sort videos from most recent to oldest (newest date/creation at top)
+const sortMostRecentFirst = (a: VideoItem, b: VideoItem) => {
+  const dateA = (a.data || '').trim();
+  const dateB = (b.data || '').trim();
+  if (dateA && dateB && dateA !== dateB) {
+    return dateB.localeCompare(dateA);
+  }
+  if (dateA && !dateB) return -1;
+  if (!dateA && dateB) return 1;
+
+  const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+  const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+  if (createdA !== createdB) {
+    return createdB - createdA;
+  }
+  return (b.id || '').localeCompare(a.id || '');
+};
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -30,6 +49,9 @@ export default function App() {
 
   // Ideas / Notes State
   const [ideas, setIdeas] = useState<IdeaItem[]>([]);
+
+  // Contents (Stories x Videos Spreadsheets) State
+  const [conteudos, setConteudos] = useState<ConteudoPlanilha[]>([]);
 
   // Month Selection State (e.g., "2026-08")
   const todayKey = useMemo(() => {
@@ -83,6 +105,16 @@ export default function App() {
     return list;
   }, []);
 
+  // Filter and sort current tab videos (most recent first)
+  const currentTabVideos = useMemo(() => {
+    return videos
+      .filter((v) => v.tipo === activeTab)
+      .sort(sortMostRecentFirst);
+  }, [videos, activeTab]);
+
+  const countPlanilha = videos.filter((v) => v.tipo === 'planilha').length;
+  const countParaChegar = videos.filter((v) => v.tipo === 'para_chegar').length;
+
   // Listen to Supabase Auth state changes
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -118,11 +150,13 @@ export default function App() {
         .select('*')
         .eq('user_id', currentUser.id);
 
-      if (activeTab === 'planilha') {
+      if (activeTab === 'planilha' || activeTab === 'para_chegar') {
         query = query.eq('mes_referencia', currentMonthKey);
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await query
+        .order('data', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
 
       if (!error && data) {
         setVideos(data as VideoItem[]);
@@ -147,8 +181,8 @@ export default function App() {
         const storedJson = localStorage.getItem(localKey);
         if (storedJson) {
           const allLocal: VideoItem[] = JSON.parse(storedJson);
-          const filtered = activeTab === 'planilha' 
-            ? allLocal.filter((v) => v.mes_referencia === currentMonthKey)
+          const filtered = (activeTab === 'planilha' || activeTab === 'para_chegar')
+            ? allLocal.filter((v) => (v.mes_referencia || '2026-08') === currentMonthKey)
             : allLocal;
           setVideos(filtered);
         } else {
@@ -203,11 +237,116 @@ export default function App() {
     }
   }, [currentUser]);
 
+  // Fetch Conteúdos (Stories x Vídeos Spreadsheets)
+  const fetchConteudos = useCallback(async () => {
+    if (!currentUser) return;
+    let fetchedFromSupabase = false;
+
+    try {
+      const { data, error } = await supabase
+        .from('conteudos')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setConteudos(data as ConteudoPlanilha[]);
+        fetchedFromSupabase = true;
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar conteúdos do Supabase, usando local:', err);
+    }
+
+    if (!fetchedFromSupabase) {
+      try {
+        const localKey = `conteudos_store_${currentUser.id}`;
+        const stored = localStorage.getItem(localKey);
+        if (stored) {
+          setConteudos(JSON.parse(stored));
+        } else {
+          setConteudos([]);
+        }
+      } catch (err) {
+        console.error('Erro ao ler conteúdos do localStorage:', err);
+      }
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     if (currentUser) {
       fetchIdeas();
+      fetchConteudos();
     }
-  }, [currentUser, fetchIdeas]);
+  }, [currentUser, fetchIdeas, fetchConteudos]);
+
+  // Handle saving spreadsheet for a specific month
+  const handleSaveConteudoForMonth = async (
+    mes: string,
+    linhas: ConteudoRow[],
+    titulo = 'Conteúdos do Mês',
+    cor: 'white' | 'cream' | 'yellow' | 'pink' | 'mint' | 'blue' = 'cream'
+  ) => {
+    if (!currentUser) return;
+
+    const existing = conteudos.find((c) => c.mes_referencia === mes);
+    const nowIso = new Date().toISOString();
+
+    const record: ConteudoPlanilha = {
+      id: existing ? existing.id : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `conteudo_${Date.now()}_${Math.random()}`),
+      user_id: currentUser.id,
+      mes_referencia: mes,
+      titulo,
+      cor,
+      linhas,
+      created_at: existing ? existing.created_at : nowIso,
+      updated_at: nowIso,
+    };
+
+    // Update state locally
+    setConteudos((prev) => {
+      const idx = prev.findIndex((c) => c.mes_referencia === mes);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = record;
+        return next;
+      }
+      return [record, ...prev];
+    });
+
+    // Save to Supabase (upsert / update or insert)
+    try {
+      if (existing) {
+        await supabase
+          .from('conteudos')
+          .update({
+            linhas,
+            titulo,
+            cor,
+            updated_at: nowIso,
+          })
+          .eq('id', existing.id)
+          .eq('user_id', currentUser.id);
+      } else {
+        await supabase.from('conteudos').insert([record]);
+      }
+    } catch (err) {
+      console.warn('Erro ao salvar conteúdo no Supabase:', err);
+    }
+
+    // Save to LocalStorage
+    const localKey = `conteudos_store_${currentUser.id}`;
+    try {
+      const stored = localStorage.getItem(localKey);
+      const allLocal: ConteudoPlanilha[] = stored ? JSON.parse(stored) : [];
+      const idx = allLocal.findIndex((c) => c.mes_referencia === mes);
+      if (idx >= 0) {
+        allLocal[idx] = record;
+      } else {
+        allLocal.unshift(record);
+      }
+      localStorage.setItem(localKey, JSON.stringify(allLocal));
+    } catch {}
+  };
 
   const handleAddIdea = async (ideaData: Partial<IdeaItem>) => {
     if (!currentUser) return;
@@ -529,11 +668,6 @@ export default function App() {
     return <LoginScreen onSuccess={() => {}} />;
   }
 
-  // Filter current tab videos
-  const currentTabVideos = videos.filter((v) => v.tipo === activeTab);
-  const countPlanilha = videos.filter((v) => v.tipo === 'planilha').length;
-  const countParaChegar = videos.filter((v) => v.tipo === 'para_chegar').length;
-
   return (
     <div className="min-h-screen bg-[#FAF6F0] text-[#4A301E] pb-12 font-sans selection:bg-[#F0E6D8]">
       {/* Top Fixed Header */}
@@ -551,6 +685,7 @@ export default function App() {
         onChangeTab={setActiveTab}
         videos={videos}
         countIdeias={ideas.length}
+        countConteudos={conteudos.length}
         userEmail={currentUser.email}
         onOpenSqlModal={() => setIsSqlModalOpen(true)}
         onExportPdf={handleExportPdf}
@@ -593,6 +728,14 @@ export default function App() {
             onUpdateIdea={handleUpdateIdea}
             onDeleteIdea={handleDeleteIdea}
           />
+        ) : activeTab === 'conteudos' ? (
+          <ConteudosView
+            conteudos={conteudos}
+            currentMonthKey={currentMonthKey}
+            onSelectMonth={setCurrentMonthKey}
+            monthsList={monthsList}
+            onSaveConteudoForMonth={handleSaveConteudoForMonth}
+          />
         ) : (
           <>
             {/* Month Selector Component */}
@@ -626,7 +769,7 @@ export default function App() {
       </main>
 
       {/* Floating Fixed Add Button for Spreadsheet Tabs */}
-      {activeTab !== 'ideias' && (
+      {activeTab !== 'ideias' && activeTab !== 'conteudos' && (
         <button
           onClick={() => {
             setEditingVideo(null);

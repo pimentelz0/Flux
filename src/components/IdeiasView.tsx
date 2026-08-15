@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
   Plus,
-  Search,
   CheckCircle2,
   Circle,
   Trash2,
@@ -10,8 +9,6 @@ import {
   X,
   Check,
   Palette,
-  Mic,
-  Calendar,
 } from 'lucide-react';
 import { IdeaItem, IdeaCheckItem } from '../types';
 
@@ -30,7 +27,6 @@ export const IdeiasView: React.FC<IdeiasViewProps> = ({
   onDeleteIdea,
   loading = false,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<IdeaItem | null>(null);
 
@@ -132,52 +128,13 @@ export const IdeiasView: React.FC<IdeiasViewProps> = ({
     });
   };
 
-  // Group ideas by date categories like in iOS Notes (Hoje, Ontem, Últimos 7 Dias, Anteriores)
-  const filteredIdeas = useMemo(() => {
-    if (!searchTerm.trim()) return ideas;
-    const term = searchTerm.toLowerCase();
-    return ideas.filter(
-      (item) =>
-        item.titulo.toLowerCase().includes(term) ||
-        (item.conteudo && item.conteudo.toLowerCase().includes(term)) ||
-        (item.items && item.items.some((i) => i.texto.toLowerCase().includes(term)))
-    );
-  }, [ideas, searchTerm]);
-
-  const groupedIdeas = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const last7Days = new Date(today);
-    last7Days.setDate(last7Days.getDate() - 7);
-
-    const groups: { [key: string]: IdeaItem[] } = {
-      Hoje: [],
-      Ontem: [],
-      'Últimos 7 Dias': [],
-      Anteriores: [],
-    };
-
-    filteredIdeas.forEach((item) => {
-      const itemDate = new Date(item.created_at || Date.now());
-      itemDate.setHours(0, 0, 0, 0);
-
-      if (itemDate.getTime() === today.getTime()) {
-        groups['Hoje'].push(item);
-      } else if (itemDate.getTime() === yesterday.getTime()) {
-        groups['Ontem'].push(item);
-      } else if (itemDate.getTime() > last7Days.getTime()) {
-        groups['Últimos 7 Dias'].push(item);
-      } else {
-        groups['Anteriores'].push(item);
-      }
+  const sortedIdeas = useMemo(() => {
+    return [...ideas].sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA;
     });
-
-    return groups;
-  }, [filteredIdeas]);
+  }, [ideas]);
 
   const getColorClasses = (color?: string) => {
     switch (color) {
@@ -212,18 +169,8 @@ export const IdeiasView: React.FC<IdeiasViewProps> = ({
 
   return (
     <div className="space-y-6 pb-24">
-      {/* Header section */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-[#E8DDD0]">
-        <h2 className="text-xl sm:text-2xl font-extrabold text-[#58331C]">
-          Notas Rápidas
-        </h2>
-        <p className="text-xs text-[#9C8272] mt-0.5">
-          Suas ideias e blocos de anotações estilo Post-it
-        </p>
-      </div>
-
-      {/* Grouped Ideas List */}
-      {ideas.length === 0 ? (
+      {/* Ideas List */}
+      {sortedIdeas.length === 0 ? (
         <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-[#E8DDD0] space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-[#FAF6F0] border border-[#E8DDD0] text-[#8C5332] flex items-center justify-center mx-auto">
             <StickyNote className="w-7 h-7" />
@@ -241,96 +188,80 @@ export const IdeiasView: React.FC<IdeiasViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          {Object.entries(groupedIdeas).map(([groupTitle, groupItems]) => {
-            if (groupItems.length === 0) return null;
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+          {sortedIdeas.map((idea) => {
+            const cardColorClass = getColorClasses(idea.cor);
 
             return (
-              <div key={groupTitle} className="space-y-3">
-                <h3 className="text-lg font-extrabold text-[#58331C] px-1 flex items-center gap-2">
-                  <span>{groupTitle}</span>
-                  <span className="text-xs font-normal text-[#9C8272]">({groupItems.length})</span>
-                </h3>
-
-                {/* Grid of Post-it Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-                  {groupItems.map((idea) => {
-                    const cardColorClass = getColorClasses(idea.cor);
-
-                    return (
-                      <div
-                        key={idea.id}
-                        className={`group relative rounded-2xl p-3.5 sm:p-4 border shadow-xs hover:shadow-md transition-all flex flex-col justify-between ${cardColorClass} min-h-[160px] cursor-pointer`}
-                        onClick={() => openEditModal(idea)}
-                      >
-                        {/* Post-it Content Preview */}
-                        <div className="space-y-2">
-                          {/* Checklist / Content Items */}
-                          {idea.items && idea.items.length > 0 ? (
-                            <div className="space-y-1 max-h-28 overflow-hidden text-[11px] sm:text-xs">
-                              {idea.items.slice(0, 5).map((item) => (
-                                <div
-                                  key={item.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleCardItem(idea, item.id);
-                                  }}
-                                  className="flex items-center gap-1.5 hover:opacity-80 cursor-pointer"
-                                >
-                                  {item.concluido ? (
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                  ) : (
-                                    <Circle className="w-3.5 h-3.5 text-[#B5A092] shrink-0" />
-                                  )}
-                                  <span
-                                    className={`truncate ${
-                                      item.concluido ? 'line-through opacity-50' : 'font-medium'
-                                    }`}
-                                  >
-                                    {item.texto}
-                                  </span>
-                                </div>
-                              ))}
-                              {idea.items.length > 5 && (
-                                <p className="text-[10px] text-[#8C5332] font-bold pt-0.5">
-                                  + {idea.items.length - 5} itens
-                                </p>
-                              )}
-                            </div>
+              <div
+                key={idea.id}
+                className={`group relative rounded-2xl p-3.5 sm:p-4 border shadow-xs hover:shadow-md transition-all flex flex-col justify-between ${cardColorClass} min-h-[160px] cursor-pointer`}
+                onClick={() => openEditModal(idea)}
+              >
+                {/* Post-it Content Preview */}
+                <div className="space-y-2">
+                  {/* Checklist / Content Items */}
+                  {idea.items && idea.items.length > 0 ? (
+                    <div className="space-y-1 max-h-28 overflow-hidden text-[11px] sm:text-xs">
+                      {idea.items.slice(0, 5).map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleCardItem(idea, item.id);
+                          }}
+                          className="flex items-center gap-1.5 hover:opacity-80 cursor-pointer"
+                        >
+                          {item.concluido ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                           ) : (
-                            <p className="text-xs line-clamp-4 leading-relaxed font-normal opacity-90">
-                              {idea.conteudo || 'Sem conteúdo.'}
-                            </p>
+                            <Circle className="w-3.5 h-3.5 text-[#B5A092] shrink-0" />
                           )}
-                        </div>
-
-                        {/* Card Footer: Title & Date & Actions */}
-                        <div className="pt-3 border-t border-black/10 mt-3 flex items-end justify-between gap-1">
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-xs sm:text-sm font-extrabold truncate leading-tight">
-                              {idea.titulo}
-                            </h4>
-                            <p className="text-[10px] opacity-60 font-medium">
-                              {formatItemTime(idea.created_at)}
-                            </p>
-                          </div>
-
-                          {/* Quick Delete */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeletingIdeaId(idea.id);
-                            }}
-                            className="p-1.5 rounded-lg opacity-80 hover:opacity-100 hover:bg-black/10 text-red-600 transition-all cursor-pointer"
-                            title="Excluir"
+                          <span
+                            className={`truncate ${
+                              item.concluido ? 'line-through opacity-50' : 'font-medium'
+                            }`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            {item.texto}
+                          </span>
                         </div>
-                      </div>
-                    );
-                  })}
+                      ))}
+                      {idea.items.length > 5 && (
+                        <p className="text-[10px] text-[#8C5332] font-bold pt-0.5">
+                          + {idea.items.length - 5} itens
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs line-clamp-4 leading-relaxed font-normal opacity-90">
+                      {idea.conteudo || 'Sem conteúdo.'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Card Footer: Title & Date & Actions */}
+                <div className="pt-3 border-t border-black/10 mt-3 flex items-end justify-between gap-1">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs sm:text-sm font-extrabold truncate leading-tight">
+                      {idea.titulo}
+                    </h4>
+                    <p className="text-[10px] opacity-60 font-medium">
+                      {formatItemTime(idea.created_at)}
+                    </p>
+                  </div>
+
+                  {/* Quick Delete */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletingIdeaId(idea.id);
+                    }}
+                    className="p-1.5 rounded-lg opacity-80 hover:opacity-100 hover:bg-black/10 text-red-600 transition-all cursor-pointer"
+                    title="Excluir"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             );

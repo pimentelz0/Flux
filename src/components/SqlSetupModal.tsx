@@ -41,11 +41,36 @@ create table if not exists public.ideias (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 4. Habilitar RLS nas tabelas
+-- 4. Criar a tabela 'conteudos' (Planilhas de Stories e Vídeos)
+create table if not exists public.conteudos (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null default auth.uid(),
+  mes_referencia text not null default to_char(now(), 'YYYY-MM'),
+  titulo text default 'Conteúdos do Mês',
+  cor text default 'cream',
+  linhas jsonb default '[]'::jsonb,
+  observacoes text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- 5. Habilitar RLS nas tabelas
 alter table public.videos enable row level security;
 alter table public.ideias enable row level security;
+alter table public.conteudos enable row level security;
 
--- 5. Criar Políticas de RLS para a tabela ideias
+-- 6. Políticas de RLS para a tabela conteudos
+drop policy if exists "Usuários podem ver seus próprios conteúdos" on public.conteudos;
+drop policy if exists "Usuários podem inserir seus próprios conteúdos" on public.conteudos;
+drop policy if exists "Usuários podem atualizar seus próprios conteúdos" on public.conteudos;
+drop policy if exists "Usuários podem deletar seus próprios conteúdos" on public.conteudos;
+
+create policy "Usuários podem ver seus próprios conteúdos" on public.conteudos for select using (auth.uid() = user_id);
+create policy "Usuários podem inserir seus próprios conteúdos" on public.conteudos for insert with check (auth.uid() = user_id);
+create policy "Usuários podem atualizar seus próprios conteúdos" on public.conteudos for update using (auth.uid() = user_id);
+create policy "Usuários podem deletar seus próprios conteúdos" on public.conteudos for delete using (auth.uid() = user_id);
+
+-- 7. Criar Políticas de RLS para a tabela ideias
 drop policy if exists "Usuários podem ver suas próprias ideias" on public.ideias;
 drop policy if exists "Usuários podem inserir suas próprias ideias" on public.ideias;
 drop policy if exists "Usuários podem atualizar suas próprias ideias" on public.ideias;
@@ -56,7 +81,7 @@ create policy "Usuários podem inserir suas próprias ideias" on public.ideias f
 create policy "Usuários podem atualizar suas próprias ideias" on public.ideias for update using (auth.uid() = user_id);
 create policy "Usuários podem deletar suas próprias ideias" on public.ideias for delete using (auth.uid() = user_id);
 
--- 6. Criar Políticas de Segurança (RLS) vinculadas ao Usuário Logado
+-- 8. Criar Políticas de Segurança (RLS) para videos
 create policy "Usuários podem ver seus próprios vídeos"
   on public.videos for select
   using (auth.uid() = user_id);

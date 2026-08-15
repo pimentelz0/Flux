@@ -13,7 +13,7 @@ export interface VideoItem {
   created_at?: string;
 }
 
-export type TabType = 'planilha' | 'para_chegar' | 'ideias';
+export type TabType = 'planilha' | 'para_chegar' | 'ideias' | 'conteudos';
 
 export interface IdeaCheckItem {
   id: string;
@@ -29,6 +29,24 @@ export interface IdeaItem {
   items?: IdeaCheckItem[];
   cor?: 'white' | 'cream' | 'yellow' | 'pink' | 'mint' | 'blue';
   created_at: string;
+}
+
+export interface ConteudoRow {
+  id: string;
+  story: string;
+  video: string;
+}
+
+export interface ConteudoPlanilha {
+  id: string;
+  user_id?: string;
+  mes_referencia?: string; // Format YYYY-MM (e.g. "2026-08")
+  titulo?: string;
+  cor?: 'white' | 'cream' | 'yellow' | 'pink' | 'mint' | 'blue';
+  linhas: ConteudoRow[];
+  observacoes?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface MonthOption {

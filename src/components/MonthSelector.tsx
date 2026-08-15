@@ -56,57 +56,40 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
     }
   };
 
-  if (activeTab === 'para_chegar') {
-    return (
-      <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-[#E8DDD0] mb-4 flex items-center justify-between">
-        <h2 className="text-lg sm:text-xl font-extrabold text-[#58331C]">
-          Para chegar
-        </h2>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-[#E8DDD0] mb-4 flex items-center justify-between gap-3">
-      {/* Title + Month Selector side-by-side */}
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <h2 className="text-lg sm:text-xl font-extrabold text-[#58331C]">
-          Planilha
-        </h2>
+    <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-[#E8DDD0] mb-4 flex items-center justify-center relative">
+      {/* Centered Month Selector Controls */}
+      <div className="flex items-center gap-1.5 bg-[#FAF6F0] p-1.5 rounded-xl border border-[#E8DDD0] shadow-2xs">
+        <button
+          onClick={handlePrev}
+          className="p-1 rounded-lg text-[#79482B] hover:bg-white hover:shadow-xs transition-all cursor-pointer"
+          title="Mês Anterior"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
 
-        {/* Small Month Selector Controls */}
-        <div className="flex items-center gap-1 bg-[#FAF6F0] p-1 rounded-xl border border-[#E8DDD0]">
-          <button
-            onClick={handlePrev}
-            className="p-1 rounded-lg text-[#79482B] hover:bg-white hover:shadow-xs transition-all cursor-pointer"
-            title="Mês Anterior"
+        <div className="relative flex items-center px-2">
+          <Calendar className="w-4 h-4 text-[#8C5332] mr-2 pointer-events-none" />
+          <select
+            value={currentMonthKey}
+            onChange={(e) => onSelectMonth(e.target.value)}
+            className="bg-transparent text-sm sm:text-base font-extrabold text-[#58331C] focus:outline-none cursor-pointer py-0.5 pr-1"
           >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          <div className="relative flex items-center px-1">
-            <Calendar className="w-3.5 h-3.5 text-[#8C5332] mr-1.5 pointer-events-none" />
-            <select
-              value={currentMonthKey}
-              onChange={(e) => onSelectMonth(e.target.value)}
-              className="bg-transparent text-xs sm:text-sm font-bold text-[#58331C] focus:outline-none cursor-pointer py-0.5"
-            >
-              {monthsList.map((m) => (
-                <option key={m.key} value={m.key}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={handleNext}
-            className="p-1 rounded-lg text-[#79482B] hover:bg-white hover:shadow-xs transition-all cursor-pointer"
-            title="Próximo Mês"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+            {monthsList.map((m) => (
+              <option key={m.key} value={m.key}>
+                {m.label}
+              </option>
+            ))}
+          </select>
         </div>
+
+        <button
+          onClick={handleNext}
+          className="p-1 rounded-lg text-[#79482B] hover:bg-white hover:shadow-xs transition-all cursor-pointer"
+          title="Próximo Mês"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );

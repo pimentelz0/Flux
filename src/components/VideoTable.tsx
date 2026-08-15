@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Edit2,
   Trash2,
-  ArrowRightLeft,
   Calendar,
   Tag,
   Video,
@@ -194,13 +193,6 @@ export const VideoTable: React.FC<VideoTableProps> = ({
                     {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0">
                       <button
-                        onClick={() => onToggleTabType(item)}
-                        className="p-1.5 rounded-lg text-[#8C5332] hover:bg-[#F0E6D8] transition-colors cursor-pointer"
-                        title="Copiar para Planilha"
-                      >
-                        <ArrowRightLeft className="w-4 h-4" />
-                      </button>
-                      <button
                         onClick={() => onEdit(item)}
                         className="p-1.5 rounded-lg text-[#79482B] hover:bg-[#F0E6D8] transition-colors cursor-pointer"
                         title="Editar Marca"
@@ -265,8 +257,8 @@ export const VideoTable: React.FC<VideoTableProps> = ({
                 <div key={item.id} className="p-3 hover:bg-[#FAF6F0] transition-colors space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 min-w-0 flex-1">
-                      <span className="text-[10px] font-mono font-bold text-[#8C5332] bg-[#FAF6F0] px-1.5 py-0.5 rounded border border-[#E8DDD0] shrink-0 mt-0.5">
-                        #{index + 1}
+                      <span className="text-[10px] font-mono font-bold text-[#8C5332] bg-[#FAF6F0] px-1.5 py-0.5 rounded border border-[#E8DDD0] shrink-0 mt-0.5 min-w-[20px] text-center">
+                        {videos.length - index}
                       </span>
                       {editingCell?.id === item.id && editingCell?.field === 'titulo' ? (
                         <div className="flex items-center gap-1 w-full">
@@ -307,13 +299,6 @@ export const VideoTable: React.FC<VideoTableProps> = ({
 
                     {/* Actions */}
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <button
-                        onClick={() => onToggleTabType(item)}
-                        className="p-1 rounded text-[#8C5332] hover:bg-[#F0E6D8] cursor-pointer"
-                        title='Copiar para "Para Chegar"'
-                      >
-                        <ArrowRightLeft className="w-3.5 h-3.5" />
-                      </button>
                       <button
                         onClick={() => onEdit(item)}
                         className="p-1 rounded text-[#79482B] hover:bg-[#F0E6D8] cursor-pointer"
@@ -358,7 +343,7 @@ export const VideoTable: React.FC<VideoTableProps> = ({
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#79482B] text-[#FFFDF9] text-xs font-bold border-b border-[#8C5332] uppercase tracking-wider">
-                    <th className="py-3 px-3 w-10 text-center text-[#E8DDD0] font-mono">#</th>
+                    <th className="py-3 px-3 w-10 text-center text-[#E8DDD0] font-mono">Nº</th>
                     <th className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
                         <Video className="w-3.5 h-3.5 text-[#E8DDD0]" />
@@ -386,7 +371,7 @@ export const VideoTable: React.FC<VideoTableProps> = ({
                     <tr key={item.id} className="hover:bg-[#FAF6F0] transition-colors group">
                       {/* Index */}
                       <td className="py-3 px-3 text-center text-xs font-mono text-[#9C8272] font-medium bg-[#FAF6F0]/50">
-                        {index + 1}
+                        {videos.length - index}
                       </td>
 
                       {/* Coluna: Vídeos (Título) */}
@@ -486,13 +471,6 @@ export const VideoTable: React.FC<VideoTableProps> = ({
                       {/* Coluna: Ações */}
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => onToggleTabType(item)}
-                            className="p-1.5 rounded-lg text-[#8C5332] hover:bg-[#F0E6D8] transition-colors cursor-pointer"
-                            title='Copiar para "Para Chegar"'
-                          >
-                            <ArrowRightLeft className="w-4 h-4" />
-                          </button>
                           <button
                             onClick={() => onEdit(item)}
                             className="p-1.5 rounded-lg text-[#79482B] hover:bg-[#F0E6D8] transition-colors cursor-pointer"
